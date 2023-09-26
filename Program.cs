@@ -2,7 +2,7 @@
 {
     static void Main()
     {
-        int lines = 5;
+        int lines = 1;
         bool wordPrint = true;
         string fileName = "WordTest1.docx";
         string filePath = @"D:\CodeProjects\GitHub\WordPrint\WordDocuments";
@@ -11,22 +11,21 @@
         {
             List<WordPrint.WordItem> wordItems = new();
             WordPrint.CreateDocument.CreateDoc(fileName, filePath);
-            for (int i_2 = 0; i_2 < lines; i_2++)
+            for (int i = 0; i < 1000; i++)
             {
                 wordItems.Add(new WordPrint.WordItem
                 {
-                    Content = $"f({i_2})",
-                    MathField = false,
-                    NewLine = false,
-                });
-                wordItems.Add(new WordPrint.WordItem
-                {
-                    Content = $"f({i_2})",
-                    MathField = false,
-                    NewLine = false,
+                    Content = $"f({i})",
+                    MathField = true,
+                    NewLine = true,
                 });
             }
+            
             WordPrint.CreateDocument.EditDoc(Path.Combine(filePath, fileName), wordItems);
+            foreach (string count in WordPrint.CalculateTime.CreateCounterList)
+                Console.WriteLine(count);
+            Console.WriteLine($"Total: {WordPrint.CalculateTime.CreateCount} ms");
+            
         }
         else
         {

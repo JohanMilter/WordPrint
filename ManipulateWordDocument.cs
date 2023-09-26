@@ -133,6 +133,7 @@ struct CreateDocument
     /// <param name="desktopPath"/>
     public static void CreateDoc(string DocumentName, string desktopPath)
     {
+        System.Diagnostics.Stopwatch stopwatch = System.Diagnostics.Stopwatch.StartNew();
         try
         {
             if (!Directory.Exists(desktopPath))
@@ -152,8 +153,10 @@ struct CreateDocument
         catch (Exception e)
         {
             Errors.ErrorChecker(e);
-            Console.ReadKey();
         }
+        stopwatch.Stop();
+        CalculateTime.CreateCounterList.Add($"Created document in {stopwatch.ElapsedMilliseconds} ms");
+        CalculateTime.CreateCount += (int)stopwatch.ElapsedMilliseconds;
     }
 
     /// <summary>
@@ -162,6 +165,7 @@ struct CreateDocument
     /// <param name="collection"></param>
     public static W.Body CreateBody(List<WordItem> collection)
     {
+        System.Diagnostics.Stopwatch stopwatch = System.Diagnostics.Stopwatch.StartNew();
         W.Body body = new();
         List<(WordItemType, List<WordItem>)> itemCollections = new();
         List<WordItem> currentItems = new();
@@ -185,6 +189,9 @@ struct CreateDocument
                 }
             }
         }
+        stopwatch.Stop();
+        CalculateTime.CreateCounterList.Add($"Created body in {stopwatch.ElapsedMilliseconds} ms");
+        CalculateTime.CreateCount += (int)stopwatch.ElapsedMilliseconds;
         return body;
     }
 
@@ -197,29 +204,16 @@ struct CreateDocument
     {
         List<List<WordItem>> collectionLines = new();
         List<WordItem> tempLine = new();
-        Console.WriteLine("GetOneLines---Before---Start--");
-        Console.WriteLine(lines.Count);
-        foreach (var item in lines)
-            Console.WriteLine(item.Content + " - " + item.NewLine);
-        Console.WriteLine("GetOneLines---Before---End----");
-        for (int i = 0; i < lines.Count; i++)
+        foreach (WordItem line in lines)
         {
-            if (lines[i].NewLine && i > 0)
+            if (line.NewLine && tempLine.Count > 0)
             {
                 collectionLines.Add(tempLine);
                 tempLine = new();
             }
-            tempLine.Add(lines[i]);
+            tempLine.Add(line);
         }
         collectionLines.Add(tempLine);
-        Console.WriteLine("GetOneLines---Start-----------");
-        foreach (var item in collectionLines)
-        {
-            foreach (var item1 in item)
-                Console.WriteLine(item1.Content);
-            Console.WriteLine();
-        }
-        Console.WriteLine("GetOneLines---End-------------");
         return collectionLines;
     }
 
@@ -233,6 +227,7 @@ struct CreateDocument
     /// <param name="remove"></param>
     public static void EditDoc(string filepath, int remove)
     {
+        System.Diagnostics.Stopwatch stopwatch = System.Diagnostics.Stopwatch.StartNew();
         try
         {
             using DocumentFormat.OpenXml.Packaging.WordprocessingDocument wordDocument = DocumentFormat.OpenXml.Packaging.WordprocessingDocument.Open(filepath, true);
@@ -264,8 +259,10 @@ struct CreateDocument
         catch (Exception e)
         {
             Errors.ErrorChecker(e);
-            Console.ReadKey();
         }
+        stopwatch.Stop();
+        CalculateTime.CreateCounterList.Add($"Edited document in {stopwatch.ElapsedMilliseconds} ms");
+        CalculateTime.CreateCount += (int)stopwatch.ElapsedMilliseconds;
     }
 
     /// <summary>
@@ -275,6 +272,7 @@ struct CreateDocument
     /// <param name="collection"></param>
     public static void EditDoc(string filepath, List<WordItem> collection)
     {
+        System.Diagnostics.Stopwatch stopwatch = System.Diagnostics.Stopwatch.StartNew();
         try
         {
             using DocumentFormat.OpenXml.Packaging.WordprocessingDocument wordDocument = DocumentFormat.OpenXml.Packaging.WordprocessingDocument.Open(filepath, true);
@@ -290,8 +288,10 @@ struct CreateDocument
         catch (Exception e)
         {
             Errors.ErrorChecker(e);
-            Console.ReadKey();
         }
+        stopwatch.Stop();
+        CalculateTime.CreateCounterList.Add($"Edited document in {stopwatch.ElapsedMilliseconds} ms");
+        CalculateTime.CreateCount += (int)stopwatch.ElapsedMilliseconds;
     }
 }
 struct CreateWordItemStyles
@@ -300,46 +300,16 @@ struct CreateWordItemStyles
     {
         List<(bool, List<WordItem>)> splitting = new();
         List<WordItem> tempSplit = new();
-        if (oneline.Count > 1)
-        {
-            for (int i = 0; i < oneline.Count; i++)
-                if (i == 0)
-                {
-                    if (oneline[i].MathField == oneline[i + 1].MathField)
-                        tempSplit.Add(oneline[i]);
-                    else
-                    {
-                        tempSplit.Add(oneline[i]);
-                        splitting.Add((oneline[i].MathField, tempSplit));
-                        tempSplit = new();
-                    }
-                }
-                else if (i == oneline.Count - 1)
-                {
-                    tempSplit.Add(oneline[i]);
-                    splitting.Add((oneline[i].MathField, tempSplit));
-                }
-                else
-                    if (oneline[i].MathField == oneline[i + 1].MathField)
-                        tempSplit.Add(oneline[i]);
-                else
-                {
-                    tempSplit.Add(oneline[i]);
-                    splitting.Add((oneline[i].MathField, tempSplit));
-                    tempSplit = new();
-                }
-        }
-        else
-        {
-            tempSplit.Add(oneline[0]);
-            splitting.Add((oneline[0].MathField, tempSplit));
-        }
-        Console.WriteLine("SplitMathAndText---Start-----------");
         foreach (var item in oneline)
         {
-            Console.WriteLine(item.Content);
+            if (tempSplit.Count > 0 && tempSplit[^1].MathField != item.MathField)
+            {
+                splitting.Add((tempSplit[0].MathField, tempSplit));
+                tempSplit = new();
+            }
+            tempSplit.Add(item);
         }
-        Console.WriteLine("SplitMathAndText---End-----------");
+        splitting.Add((tempSplit[0].MathField, tempSplit));
         return splitting;
     }
 
@@ -514,10 +484,13 @@ struct Errors
                 Console.WriteLine("Document is open. \nClose the document, before it can be edited!");
                 break;
         }
+        Console.ReadKey();
     }
 }
-struct CalculateTime
+static class CalculateTime
 {
+    public static int CreateCount = 0;
+    public static List<string> CreateCounterList = new();
     public static float TimeForLines(int lines)
     {
         return 0.03f * lines + 174.3f;
